@@ -11,6 +11,8 @@ metadata:
 
 此 Skill 提供将 MasterGo 设计稿转换为生产级代码的结构化工作流程。确保与 MasterGo MCP 服务器的正确集成，实现 1:1 的视觉还原。
 
+**重要**: 根据项目框架生成对应代码，**严禁生成纯 HTML 文件**。
+
 ## 前置条件
 
 - MasterGo MCP 服务器必须已连接且可访问
@@ -38,7 +40,30 @@ metadata:
 - File ID: `kL9xQn2VwM8pYrTb4ZcHjF`
 - Layer ID: `42-15`
 
-### 步骤 2: 获取设计上下文
+### 步骤 2: 识别项目框架
+
+**在获取设计数据前，必须先识别当前项目的框架！**
+
+检查项目根目录的配置文件来判断框架：
+
+| 框架 | 判断依据 |
+|------|----------|
+| **Vue 2** | `package.json` 包含 `vue: "2.x"`，存在 `src/main.js` |
+| **Vue 3** | `package.json` 包含 `vue: "3.x"`，存在 `src/main.js` 或 `src/main.ts` |
+| **React** | `package.json` 包含 `react`，存在 `src/App.jsx` 或 `src/App.tsx` |
+| **Next.js** | 存在 `next.config.js` 或 `next.config.ts` |
+| **Nuxt** | 存在 `nuxt.config.js` 或 `nuxt.config.ts` |
+| **Vite + Vue** | 存在 `vite.config.ts` 和 `vue` 依赖 |
+| **Element UI** | `package.json` 包含 `element-ui` (Vue 2) |
+| **Element Plus** | `package.json` 包含 `element-plus` (Vue 3) |
+| **Ant Design** | `package.json` 包含 `antd` |
+
+**组件库优先级**（按优先级排序）:
+1. 公司内部组件库（如 `dst-v3-ele-components`、`portal-common`）
+2. 项目中已使用的 UI 框架（Element UI/Plus、Ant Design 等）
+3. 基础框架组件（Vue/React 原生组件）
+
+### 步骤 3: 获取设计上下文
 
 使用提取的 fileId 和 layerId 调用 `mcp__getDsl`。
 
@@ -58,7 +83,7 @@ mcp__getDsl(fileId="kL9xQn2VwM8pYrTb4ZcHjF", layerId="42-15")
 2. 从元数据中识别所需的特定子节点
 3. 使用特定子节点 ID 单独获取 DSL 数据
 
-### 步骤 3: 获取截图参考（可选但推荐）
+### 步骤 4: 获取截图参考（可选但推荐）
 
 使用相同的 fileId 和 layerId 获取视觉参考截图。
 
@@ -67,7 +92,7 @@ mcp__getDsl(fileId="kL9xQn2VwM8pYrTb4ZcHjF", layerId="42-15")
 mcp__4_5v_mcp__analyze_image(imageSource="设计稿截图URL", prompt="详细描述布局结构、颜色样式、主要组件和交互元素")
 ```
 
-### 步骤 4: 下载所需资源
+### 步骤 5: 下载所需资源
 
 从 MasterGo MCP 返回的数据中下载任何资源（图片、图标、SVG）。
 
@@ -76,18 +101,111 @@ mcp__4_5v_mcp__analyze_image(imageSource="设计稿截图URL", prompt="详细描
 - 不要导入或添加新的图标包 - 所有资源应来自 MasterGo 数据
 - 当提供资源源时，不要使用或创建占位符
 
-### 步骤 5: 转换为项目约定
+### 步骤 6: 按框架生成代码
 
-将 MasterGo 输出转换为当前项目的框架、样式和约定。
+**这是最关键的一步 - 必须根据项目框架生成对应代码！**
 
-**关键原则:**
-- 将 MasterGo MCP 输出视为设计和行为的表示，而非最终代码风格
-- 用项目首选的实用程序或设计系统 token 替换默认样式
-- 重用现有组件（按钮、输入框、排版、图标包装器）而非复制功能
-- 一致使用项目的颜色系统、排版比例和间距 token
-- 尊重现有的路由、状态管理和数据获取模式
+#### 6.1 Vue 2 + Element UI
 
-### 步骤 6: 实现 1:1 视觉还原
+```vue
+<template>
+  <div class="component-name">
+    <el-button type="primary">按钮</el-button>
+    <el-input v-model="inputValue" placeholder="请输入"></el-input>
+  </div>
+</template>
+
+<script>
+export default {
+  name: 'ComponentName',
+  data() {
+    return {
+      inputValue: ''
+    }
+  }
+}
+</script>
+
+<style scoped>
+.component-name {
+  /* 样式 */
+}
+</style>
+```
+
+#### 6.2 Vue 3 + Element Plus
+
+```vue
+<template>
+  <div class="component-name">
+    <el-button type="primary">按钮</el-button>
+    <el-input v-model="inputValue" placeholder="请输入"></el-input>
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+
+const inputValue = ref('')
+</script>
+
+<style scoped>
+.component-name {
+  /* 样式 */
+}
+</style>
+```
+
+#### 6.3 React + Ant Design
+
+```jsx
+import React, { useState } from 'react'
+import { Button, Input } from 'antd'
+import './index.css'
+
+const ComponentName = () => {
+  const [inputValue, setInputValue] = useState('')
+
+  return (
+    <div className="component-name">
+      <Button type="primary">按钮</Button>
+      <Input value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder="请输入" />
+    </div>
+  )
+}
+
+export default ComponentName
+```
+
+#### 6.4 Vue 3 + dst-v3-ele-components（公司组件库）
+
+```vue
+<template>
+  <div class="component-name">
+    <DstForm :config="formConfig" :form-data="formData" />
+    <DstTable :data="tableData" :columns="columns" />
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+import { DstForm, DstTable } from 'dst-v3-ele-components'
+
+const formConfig = ref([])
+const formData = ref({})
+const tableData = ref([])
+const columns = ref([])
+</script>
+```
+
+**代码生成规则:**
+- **严禁生成纯 HTML 文件**（如 `.html` 文件）
+- 必须生成项目框架对应的组件文件
+- 使用项目已安装的 UI 组件库
+- 遵循项目的代码风格（Options API 或 Composition API）
+- 样式使用项目预处理器（SCSS/Less/Stylus）
+
+### 步骤 7: 实现 1:1 视觉还原
 
 努力实现与 MasterGo 设计像素级完美的视觉还原。
 
@@ -98,7 +216,7 @@ mcp__4_5v_mcp__analyze_image(imageSource="设计稿截图URL", prompt="详细描
 - 遵循 WCAG 可访问性要求
 - 根据需要添加组件文档
 
-### 步骤 7: 验证设计
+### 步骤 8: 验证设计
 
 在标记完成之前，对照 MasterGo 设计验证最终 UI。
 
@@ -110,6 +228,7 @@ mcp__4_5v_mcp__analyze_image(imageSource="设计稿截图URL", prompt="详细描
 - [ ] 响应式行为遵循 MasterGo 约束
 - [ ] 资源正确渲染
 - [ ] 满足可访问性标准
+- [ ] **代码使用项目框架，非纯 HTML**
 
 ## 实现规则
 
@@ -133,47 +252,134 @@ mcp__4_5v_mcp__analyze_image(imageSource="设计稿截图URL", prompt="详细描
 - 为组件 props 添加 TypeScript 类型
 - 为导出的组件包含 JSDoc 注释
 
+## 框架特定指南
+
+### Vue 2 项目
+
+- 使用 Options API
+- 组件使用 `.vue` 单文件组件
+- Element UI 组件优先
+- 样式使用 SCSS
+
+### Vue 3 项目
+
+- 优先使用 Composition API (`<script setup>`)
+- 组件使用 `.vue` 单文件组件
+- Element Plus 组件优先
+- 样式使用 SCSS
+
+### React 项目
+
+- 使用函数组件 + Hooks
+- 组件使用 `.jsx` 或 `.tsx`
+- Ant Design 或 Material-UI 组件优先
+- 样式使用 CSS Modules 或 styled-components
+
+### 公司内部组件库
+
+如果项目使用 `dst-v3-ele-components` 或类似内部组件库：
+
+- 优先使用 `DstForm`、`DstTable`、`DstSelect` 等组件
+- 参考 `CLAUDE.md` 中的组件使用文档
+- 遵循项目的组件优先级规则
+
 ## 示例
 
-### 示例 1: 实现按钮组件
+### 示例 1: Vue 3 + Element Plus 项目
 
-用户说: "实现这个 MasterGo 按钮组件: https://mastergo.com/design/kL9xQn2VwM8pYrTb4ZcHjF?layer_id=42-15"
+用户在 Vue 3 项目中说: "实现这个 MasterGo 按钮: https://mastergo.com/design/xxx?layer_id=42-15"
 
-**操作:**
+**生成代码:**
 
-1. 解析 URL 提取 fileId=`kL9xQn2VwM8pYrTb4ZcHjF` 和 layerId=`42-15`
-2. 运行 `mcp__getDsl(fileId="kL9xQn2VwM8pYrTb4ZcHjF", layerId="42-15")`
-3. 如有需要获取视觉参考
-4. 从资源端点下载任何按钮图标
-5. 检查项目是否有现有按钮组件
-6. 如果有，用新变体扩展它；如果没有，使用项目约定创建新组件
-7. 将 MasterGo 颜色映射到项目设计 token（如 `primary-500`、`primary-hover`）
-8. 对照截图验证内边距、边框半径、排版
+```vue
+<template>
+  <el-button type="primary" :class="['custom-button', buttonClass]">
+    {{ text }}
+  </el-button>
+</template>
 
-**结果:** 匹配 MasterGo 设计的按钮组件，集成到项目设计系统中。
+<script setup>
+import { defineProps } from 'vue'
 
-### 示例 2: 构建仪表板布局
+defineProps({
+  text: {
+    type: String,
+    default: '按钮'
+  },
+  buttonClass: {
+    type: String,
+    default: ''
+  }
+})
+</script>
 
-用户说: "构建这个仪表板: https://mastergo.com/design/pR8mNv5KqXzGwY2JtCfL4D?layer_id=10-5"
+<style scoped lang="scss">
+.custom-button {
+  padding: 12px 24px;
+  border-radius: 4px;
+  // 根据 MasterGo 设计调整样式
+}
+</style>
+```
 
-**操作:**
+### 示例 2: Vue 2 + Element UI 项目
 
-1. 解析 URL 提取 fileId 和 layerId
-2. 运行 `mcp__getMeta` 了解页面结构
-3. 从元数据中识别主要部分（页眉、侧边栏、内容区域、卡片）及其子节点 ID
-4. 对每个主要部分运行 `mcp__getDsl` 获取详细信息
-5. 下载所有资源（徽标、图标、图表）
-6. 使用项目的布局基元构建布局
-7. 尽可能使用现有组件实现每个部分
-8. 对照 MasterGo 约束验证响应式行为
+用户在 Vue 2 项目中说: "实现这个 MasterGo 表单: https://mastergo.com/design/xxx?layer_id=10-5"
 
-**结果:** 具有响应式布局的完整仪表板，匹配 MasterGo 设计。
+**生成代码:**
+
+```vue
+<template>
+  <el-form :model="form" :rules="rules" ref="formRef" label-width="120px">
+    <el-form-item label="用户名" prop="username">
+      <el-input v-model="form.username" placeholder="请输入用户名"></el-input>
+    </el-form-item>
+    <el-form-item label="密码" prop="password">
+      <el-input v-model="form.password" type="password" placeholder="请输入密码"></el-input>
+    </el-form-item>
+    <el-form-item>
+      <el-button type="primary" @click="handleSubmit">提交</el-button>
+    </el-form-item>
+  </el-form>
+</template>
+
+<script>
+export default {
+  name: 'LoginForm',
+  data() {
+    return {
+      form: {
+        username: '',
+        password: ''
+      },
+      rules: {
+        username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+        password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
+      }
+    }
+  },
+  methods: {
+    handleSubmit() {
+      this.$refs.formRef.validate((valid) => {
+        if (valid) {
+          // 提交逻辑
+        }
+      })
+    }
+  }
+}
+</script>
+```
 
 ## 最佳实践
 
-### 始终从上下文开始
+### 始终从框架识别开始
 
-永远不要基于假设实现。始终先获取 `mcp__getDsl`。
+永远不要假设框架。始终先检查 `package.json` 和项目结构确定框架。
+
+### 框架优先于 HTML
+
+即使 MasterGo 返回 HTML，也要转换为项目框架的组件代码。**绝对不要创建 `.html` 文件**。
 
 ### 增量验证
 
@@ -193,6 +399,16 @@ mcp__4_5v_mcp__analyze_image(imageSource="设计稿截图URL", prompt="详细描
 
 ## 常见问题和解决方案
 
+### 问题: 生成了 HTML 文件而不是 Vue/React 组件
+
+**原因:** 没有正确识别项目框架。
+**解决方案:** 在生成代码前，务必检查 `package.json` 确认框架和依赖。
+
+### 问题: 组件库使用错误
+
+**原因:** Vue 2 项目使用了 Element Plus，或 Vue 3 项目使用了 Element UI。
+**解决方案:** 根据 package.json 中依赖的版本选择正确的组件库。
+
 ### 问题: MasterGo 输出被截断
 
 **原因:** 设计太复杂或有太多嵌套层级无法在单个响应中返回。
@@ -201,7 +417,7 @@ mcp__4_5v_mcp__analyze_image(imageSource="设计稿截图URL", prompt="详细描
 ### 问题: 实现后设计不匹配
 
 **原因:** 实现代码与原始 MasterGo 设计之间的视觉差异。
-**解决方案:** 与步骤 3 的截图进行并排比较。检查设计上下文数据中的间距、颜色和排版值。
+**解决方案:** 与步骤 4 的截图进行并排比较。检查设计上下文数据中的间距、颜色和排版值。
 
 ### 问题: 资源未加载
 
