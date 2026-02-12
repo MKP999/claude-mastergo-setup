@@ -7,7 +7,7 @@
 ### 方式一：全局安装（推荐）
 
 ```bash
-git clone https://github.com/your-org/claude-mastergo-setup.git
+git clone https://github.com/MKP999/claude-mastergo-setup.git
 cd claude-mastergo-setup
 chmod +x setup.sh
 ./setup.sh --token=<your_mastergo_token>
