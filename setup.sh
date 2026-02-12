@@ -14,6 +14,7 @@ set -e
 DEFAULT_URL="https://mastergo.com"
 MCP_NAME="mastergo-magic-mcp"
 SCOPE="user"  # 默认全局安装
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # ======================== 颜色输出 ========================
 RED='\033[0;31m'
@@ -30,6 +31,7 @@ error()   { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 # ======================== 解析参数 ========================
 TOKEN=""
 URL="$DEFAULT_URL"
+INSTALL_SKILL=true
 
 for arg in "$@"; do
   case $arg in
@@ -45,6 +47,9 @@ for arg in "$@"; do
     --scope=user)
       SCOPE="user"
       ;;
+    --no-skill)
+      INSTALL_SKILL=false
+      ;;
     --help|-h)
       echo ""
       echo "MasterGo MCP for Claude Code - 一键安装"
@@ -58,6 +63,7 @@ for arg in "$@"; do
       echo "  --token=TOKEN     MasterGo API Token (必填)"
       echo "  --url=URL         MasterGo 服务地址 (默认: $DEFAULT_URL)"
       echo "  --scope=SCOPE     安装范围: user(全局) 或 project(项目级) (默认: user)"
+      echo "  --no-skill        跳过 Skill 文件安装"
       echo "  --help, -h        显示帮助信息"
       echo ""
       echo "获取 Token:"
@@ -97,6 +103,7 @@ fi
 info "安装范围: $([ "$SCOPE" = "user" ] && echo "全局(user)" || echo "项目级(project)")"
 info "服务地址: $URL"
 info "MCP 名称: $MCP_NAME"
+[ "$INSTALL_SKILL" = true ] && info "Skill 安装: 是" || info "Skill 安装: 否"
 echo ""
 
 # ======================== 安装 MCP ========================
@@ -115,6 +122,35 @@ claude mcp add $SCOPE_FLAG "$MCP_NAME" \
 success "MCP 服务注册成功!"
 echo ""
 
+# ======================== 安装 Skill ========================
+if [ "$INSTALL_SKILL" = true ]; then
+  info "正在安装 MasterGo Skill 文件..."
+
+  # 确定目标目录
+  if [ "$SCOPE" = "project" ]; then
+    # 项目级安装：安装到当前项目的 .claude/skills
+    TARGET_DIR="$(pwd)/.claude/skills"
+  else
+    # 全局安装：安装到用户目录
+    TARGET_DIR="$HOME/.claude/skills"
+  fi
+
+  # 创建目标目录
+  mkdir -p "$TARGET_DIR"
+
+  # 复制 Skill 文件
+  SKILL_SOURCE="$SCRIPT_DIR/skills/mastergo-implement-design/.claude-plugin/mastergo-implement-design.md"
+  SKILL_TARGET="$TARGET_DIR/mastergo-implement-design.md"
+
+  if [ -f "$SKILL_SOURCE" ]; then
+    cp "$SKILL_SOURCE" "$SKILL_TARGET"
+    success "Skill 文件已安装到: $SKILL_TARGET"
+  else
+    warn "Skill 源文件不存在，跳过 Skill 安装"
+  fi
+  echo ""
+fi
+
 # ======================== 验证连接 ========================
 info "正在验证连接..."
 
@@ -131,5 +167,11 @@ echo "  安装完成!"
 echo "========================================="
 echo ""
 echo "  现在你可以在 Claude Code 中使用 MasterGo 了。"
-echo "  试试: 粘贴一个 MasterGo 设计链接，让 Claude 帮你生成代码。"
+echo ""
+echo "  使用方式:"
+echo "    1. 粘贴 MasterGo 设计稿链接"
+echo "    2. 或直接说: '帮我实现这个 MasterGo 设计'"
+echo ""
+echo "  示例链接:"
+echo "    https://mastergo.com/design/xxxxx?layer_id=xx-xx"
 echo ""
